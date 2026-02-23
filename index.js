@@ -1,33 +1,59 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits } = require('discord.js');
+const fs = require('node:fs');
+const path = require('node:path');
+const { Client, Collection, GatewayIntentBits } = require('discord.js');
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,           // 伺服器相關事件
-    GatewayIntentBits.GuildMessages,    // 讀取訊息
-    GatewayIntentBits.MessageContent,   // 讀取訊息內容 (這要在後台開啟)
-  ],
+    intents: [
+        GatewayIntentBits.Guilds,              // 伺服器相關事件
+        GatewayIntentBits.GuildMessages,        // 讀取訊息
+        GatewayIntentBits.MessageContent,    // 讀取訊息內容 (這要在後台開啟)
+    ],
 });
+
+const load_command = (() => {
+	client.commands = new Collection();
+	const commandsPath = path.join(__dirname, 'command');
+	const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+	for (const file of commandFiles) {
+		const filePath = path.join(commandsPath, file);
+		const command = require(filePath);
+		// 以指令名稱作為 Key 存入 Collection
+		client.commands.set(command.name, command);
+	}
+});
+
 
 // 當機器人準備好時觸發
 client.once('ready', () => {
-  console.log(`✅ 機器人已上線：${client.user.tag}`);
+    console.log('--------------------------------------');
+    console.log(`🚀 機器人連線成功！`);
+    console.log(`🤖 帳號名稱：${client.user.tag}`);
+    console.log('--------------------------------------');
 });
 
 // 監聽訊息指令
 client.on('messageCreate', async (message) => {
-  // 排除機器人自己的訊息，避免無限迴圈
-  if (message.author.bot) return;
+	const content = message.content;
+	
+	if (message.author.bot || !content.startsWith("!")) return;
+	const args = content.slice(1).trim().split(/ +/);
+	const commandName = args.shift().toLowerCase();
+	
+	const command = client.commands.get(commandName);
+	if (!command) return;
 
-  // 簡單的指令判斷
-  if (message.content === '!ping') {
-    await message.reply('🏓 Pong! 我正聽著你的指令呢！');
-  }
+	try {
+		command.execute(message, args);
+		console.log(`[執行] 指令: ${commandName} | 執行者: ${message.author.tag}`);
+	} catch (error) {
+		console.error(error);
+		message.reply('錯誤指令');
+	}
 
-  if (message.content === '!hello') {
-    await message.channel.send(`你好 ${message.author.username}！準備好寫音樂機器人了嗎？`);
-  }
 });
+
+load_command()
 
 // 使用 Token 登入
 client.login(process.env.DISCORD_TOKEN);
