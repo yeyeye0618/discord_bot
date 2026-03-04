@@ -37,6 +37,8 @@ client.on('messageCreate', async (message) => {
 	const content = message.content;
 	
 	if (message.author.bot || !content.startsWith("!")) return;
+    load_command()
+    
 	const args = content.slice(1).trim().split(/ +/);
 	const commandName = args.shift().toLowerCase();
 	
