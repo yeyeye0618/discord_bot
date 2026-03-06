@@ -3,7 +3,7 @@
 # ==========================================
 $CONTAINER_NAME = "my-discord-bot"
 $PYTHON_PROJECT_ROOT = Resolve-Path "$PSScriptRoot\..\resource_transfer"
-$PYTHON_EXE = "$PYTHON_PROJECT_ROOT\.venv\Scripts\python.exe"
+$PYTHON_EXE = "$PYTHON_PROJECT_ROOT\.venv\Scripts\pythonw.exe"
 $PYTHON_MAIN = "$PYTHON_PROJECT_ROOT\main.py"
 $SIGNAL_FILE = "$PYTHON_PROJECT_ROOT\.restart_signal"
 
@@ -26,6 +26,7 @@ function Safe-Start-Python {
         $global:pythonProcess = Start-Process $PYTHON_EXE -ArgumentList $PYTHON_MAIN `
                                              -WorkingDirectory $PYTHON_PROJECT_ROOT `
                                              -Verb RunAs `
+                                             -WindowStyle Hidden `
                                              -PassThru
     }
 }
@@ -45,19 +46,45 @@ Write-Host "Monitoring Signal: $SIGNAL_FILE" -ForegroundColor Gray
 # 紀錄上一次 Docker 的狀態，用來比對變化
 $lastDockerStatus = ""
 
+function Safe-Stop-Python {
+    Write-Host "[$(Get-Date)] Action: Stopping Python..." -ForegroundColor Red
+    
+    # 1. 獲取所有相關進程
+    $procs = Get-Process | Where-Object { $_.ProcessName -match "python" -and $_.Path -like "*$($PYTHON_PROJECT_ROOT)*" }
+    
+    if ($procs) {
+        $procs | Stop-Process -Force -ErrorAction SilentlyContinue
+        
+        # 2. 驗證環節：等待進程真正消失 (最多等 5 秒)
+        $timeout = 5
+        while ((Get-Process | Where-Object { $_.ProcessName -match "python" -and $_.Path -like "*$($PYTHON_PROJECT_ROOT)*" }) -and $timeout -gt 0) {
+            Start-Sleep -Seconds 1
+            $timeout--
+            Write-Host "Waiting for process to exit... ($timeout)" -ForegroundColor Gray
+        }
+    }
+    $global:pythonProcess = $null
+}
+
 while ($true) {
     # --- A. 監控訊號檔 (每秒檢查) ---
     if (Test-Path $SIGNAL_FILE) {
         Write-Host "[$(Get-Date)] Signal detected: Restarting Python..." -ForegroundColor Yellow
-        Safe-Stop-Python
-        Start-Sleep -Milliseconds 500  # 給系統一點喘息時間
-        Safe-Start-Python
+    
+        # 移除訊號檔放在前面，防止重複觸發
         Remove-Item $SIGNAL_FILE -Force -ErrorAction SilentlyContinue
+        
+        Safe-Stop-Python
+        
+        # 額外保險：強制檢查一次是否有殘留，確保環境乾淨
+        Start-Sleep -Seconds 1 
+        
+        Safe-Start-Python
     }
 
     # --- B. 監控 Docker 狀態 ---
     $currentStatus = docker inspect --format='{{.State.Running}}' $CONTAINER_NAME 2>$null
-    
+    Start-Sleep -Seconds 1 
     if ($currentStatus -eq "true" -and $lastDockerStatus -ne "true") {
         Write-Host "[$(Get-Date)] Event: Bot Started." -ForegroundColor Cyan
         Safe-Start-Python
@@ -65,6 +92,7 @@ while ($true) {
     elseif ($currentStatus -ne "true" -and $lastDockerStatus -eq "true") {
         Write-Host "[$(Get-Date)] Event: Bot Stopped." -ForegroundColor Red
         Safe-Stop-Python
+        exit
     }
 
     $lastDockerStatus = $currentStatus

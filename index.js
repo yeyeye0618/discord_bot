@@ -48,7 +48,7 @@ client.once('clientReady', async () => {
 
         if (commandsData.length > 0) {
             await client.application.commands.set(commandsData);
-            console.log(`✅ 已成功更新 ${commandsData.length} 個斜線指令選單`);
+            console.log(`✅ 已成功更新 ${commandsData.length} 斜線指令`);
         } else {
             console.log('ℹ️ 沒有偵測到任何斜線指令格式的檔案，跳過註冊。');
         }
