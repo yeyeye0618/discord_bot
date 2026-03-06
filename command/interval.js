@@ -45,7 +45,7 @@ module.exports = {
 
             // 5. 回覆使用者 (ephemeral: true 確保只有本人看得見)
             await interaction.reply({
-                content: `✅ 已將 interval 時間間隔設定為 \`${new_interval_times}\`，並已發送重啟訊號。`,
+                content: `✅ 已將 interval 時間間隔設定為 \`${new_interval_times}\``,
                 ephemeral: true 
             });
 

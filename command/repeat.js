@@ -45,7 +45,7 @@ module.exports = {
 
             // 5. 回覆使用者 (ephemeral: true 確保只有本人看得見)
             await interaction.reply({
-                content: `✅ 已將 repeat 次數設定為 \`${new_repeat_times}\`，並已發送重啟訊號。`,
+                content: `✅ 已將 repeat 次數設定為 \`${new_repeat_times}\``,
                 ephemeral: true 
             });
 
