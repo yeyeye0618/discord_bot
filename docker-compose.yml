@@ -8,4 +8,7 @@ services:
     environment:
       - TZ=Asia/Taipei
     volumes:
-      - .:/app
+      - .:/usr/src/app
+      - ../resource_transfer:/usr/src/app/resource_transfer
+      - /usr/src/app/node_modules
+    network_mode: "bridge"

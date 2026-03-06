@@ -25,11 +25,15 @@ const load_command = (() => {
 
 
 // 當機器人準備好時觸發
-client.once('ready', () => {
+client.once('clientReady', () => {
     console.log('--------------------------------------');
     console.log(`🚀 機器人連線成功！`);
     console.log(`🤖 帳號名稱：${client.user.tag}`);
     console.log('--------------------------------------');
+	const channel = client.channels.cache.get(process.env.CHANNEL_ID);
+    if (channel) {
+        channel.send('機器人已上線！');
+    }
 });
 
 // 監聽訊息指令
