@@ -22,7 +22,7 @@ module.exports = {
                 return await interaction.reply({ content: '⚠️ 設定檔目前是空的。', ephemeral: true });
             }
 
-            const formattedContent = `### 📋 當前 ERTS 參數設定：\n\`\`\`env\n${envContent}\n\`\`\``;
+            const formattedContent = `###當前 ERTS 參數設定：\n\`\`\`env\n${envContent}\n\`\`\``;
 
             // 🚩 回覆訊息並設定為只有本人可見
             await interaction.reply({
